@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
     <head>
+        <link rel="stylesheet" href="styles.css">
         <script>
             window.onload = (e) => {
                 let tasks = {1: {
@@ -33,6 +34,7 @@
                 b.classList.add('task-button');
                 b.setAttribute('value', t);
                 b.innerText = `Task ${t}`;
+                
 
                 b.addEventListener('click', e=>{
                     let a = document.createElement('a');
@@ -56,6 +58,24 @@
                 })
 
                 document.querySelector('#buttons').appendChild(b);
+
+                let tl = document.getElementById("tasks");
+                let newList = document.createElement('li');
+                let p = document.createElement('p');
+                p.innerText = `Task ${t} \n In any order`;
+                let ul = document.createElement('ul')
+                Object.entries(tasks[t]).map(([a,n]) => {
+                    let li = document.createElement('li');
+                    li.innerText = `Set ${a} feed to ${n}`;
+                    return li;
+                }).forEach(li => {
+                    ul.appendChild(li);
+                });
+                p.appendChild(ul);
+                newList.appendChild(p);
+                tl.appendChild(newList);
+
+
             })
             }
             else {
@@ -68,6 +88,15 @@
     </head>
     <body>
         <div id="buttons"></div>
+        <div>
+            Below are the descriptions of the tasks which should also be in the questionaire. <br/> When you are ready to start a task click the button
+            and use the interface to complete the task. <br/> If you cannot complete the task say 'debug' and fill in the relevant part of the form.
+            Once you have completed the task you will be presented with the settings which you should enter into the questionairre you will then be redirected to this page.
+            
+            <ul id="tasks">
+
+            </ul>
+        </div>
         <div id="debug"></div>
         <script>
             let params = new URLSearchParams(location.search);
