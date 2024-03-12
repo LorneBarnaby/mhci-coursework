@@ -442,6 +442,14 @@
             taskData = data;
         }
 
+        const completeExperimentDoNotUsePlease = () => {
+                let a = Array.from(document.getElementsByClassName("menu-item"))
+                a.forEach((i) => {
+                    let name = i.getAttribute('id').split('-')[1];
+                    i.querySelector('.food-label').getAttribute('food-counter').foodCount = taskData[name];
+                })
+        }
+
         const setupVoice = () => {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             const SpeechGrammarList = window.SpeechGrammarList || window.webkitSpeechGrammarList;

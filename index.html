@@ -34,7 +34,7 @@
                 b.classList.add('task-button');
                 b.setAttribute('value', t);
                 b.innerText = `Task ${t}`;
-                
+
 
                 b.addEventListener('click', e=>{
                     let a = document.createElement('a');
@@ -100,10 +100,11 @@
         <div id="debug"></div>
         <script>
             let params = new URLSearchParams(location.search);
+
             if(params.has('debug')){
                 let d = document.getElementById("debug");
                 console.log(d)
-                document.getElementById("debug").innerHTML = atob(params.get('debug'))
+                document.getElementById("debug").innerText = `Params for last task: ${atob(params.get('debug'))}`
             }
         </script>
     </body>
