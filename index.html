@@ -346,17 +346,17 @@
                 } else if(beta <= 47){
                     backward();
                 } 
+                
+            }, 500);
+            // // window.addEventListener('stopit', () => clearInterval(intervalId));
 
+            setInterval(() => {
                 try{
                     recognition.start();
                 } catch (e) {
                     //
                 }
-                
-            }, 500);
-            // // window.addEventListener('stopit', () => clearInterval(intervalId));
-
-
+            }, 10);
             setupVoice();
             window.addEventListener('continue', () => {
                 playing = true;
