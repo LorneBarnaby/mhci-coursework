@@ -4,6 +4,7 @@
 <head>
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     <script src="https://unpkg.com/aframe-event-set-component@3.0.3/dist/aframe-event-set-component.min.js"></script>
+    <link rel="stylesheet" href="styles.css">
     <script>
         var template;
         var menuItems;
@@ -16,12 +17,15 @@
         var selected_item;
         var playing = true;
         var recognition;
+        let taskData = null ;
+        var debugged = false;
 
         const X_OFFSET = 0.05;
 
         const saidSelect = new Event("select");
         const saidContinue = new Event("continue");
         const saidFeed = new Event("feed");
+        const saidDecrease = new Event("decrease");
 
         class Animal {
             constructor(name) {
@@ -42,7 +46,7 @@
           
             }
 
-            createLooping = (node, attribute, backwardsAnimation, forwardsAnimation, position) => {
+            createLooping = (orig, node, attribute, backwardsAnimation, forwardsAnimation, position) => {
                 node.setAttribute('isStart', false);
                 node.setAttribute('isEnd', false);
 
@@ -64,6 +68,12 @@
                 let label = node.querySelector(".item-label");
                 label.setAttribute('text', `value: ${this.name};`)
                 label.setAttribute('id', `label-${this.name}`);
+
+
+                let food = orig.querySelector(".food-label");
+
+                node.querySelector(".food-label").setAttribute('food-counter', food.getAttribute('food-counter'));
+
                 node.addEventListener('animationcomplete__forward', this.forwardComplete)
                 node.addEventListener('animationcomplete__backward', this.backwardComplete)
                 node.setAttribute(attribute, true);
@@ -82,8 +92,8 @@
 
 
 
-            createStart = oldNode => {
-                start = this.createLooping(oldNode, 'isStart',
+            createStart = (orig, oldNode) => {
+                start = this.createLooping(orig, oldNode, 'isStart',
                      `
                     property: scale;
                     from: 0 0 0; to: 0 0 0;
@@ -101,10 +111,10 @@
                  this.parent.appendChild(start);
                 }
 
-            createEnd = oldNode => {
+            createEnd = (orig, oldNode) => {
 
 
-                end = this.createLooping(oldNode, 'isEnd',
+                end = this.createLooping(orig, oldNode, 'isEnd',
                      `
                     property: scale;
                     from: 0 0 0; to: 1 1 1;
@@ -166,10 +176,10 @@
                 }
 
                 if(eplace== (N_ITEMS - 1)){
-                    this.createStart(e.target.cloneNode(true));
+                    this.createStart(e.target, e.target.cloneNode(true));
                 }
                 if(eplace == 0){
-                    this.createEnd(e.target.cloneNode(true))
+                    this.createEnd(e.target, e.target.cloneNode(true))
                 }
             }
 
@@ -266,10 +276,10 @@
                 console.log('place', this.place); 
 
                 if(this.place == (N_ITEMS - 1)){
-                    this.createStart(listEl.cloneNode(true));
+                    this.createStart(listEl, listEl.cloneNode(true));
                 }
                 if(this.place == 0){
-                        this.createEnd(listEl.cloneNode(true))
+                        this.createEnd(listEl, listEl.cloneNode(true))
                 }
             }
         }
@@ -298,6 +308,14 @@
             document.getElementById('hud').childNodes.forEach(dn);
         }
 
+
+        const test = () => {
+            window.dispatchEvent(new Event('select')); 
+            window.dispatchEvent(new Event('feed')); 
+            window.dispatchEvent(new Event('feed')); 
+            window.dispatchEvent(new Event('continue'));
+            forward();
+        }
         window.onload = async (event) => {
 
             this.canvas = document.getElementById("my-canvas");
@@ -339,9 +357,9 @@
             // }
 
             var intervalId = setInterval(function(){
-                if(beta >= 55){
+                if(beta >= (taskData?taskData.upper:55)){
                     forward();
-                } else if(beta <= 47){
+                } else if(beta <= (taskData?taskData.lower:47)){
                     backward();
                 } 
                 
@@ -355,6 +373,21 @@
                     //
                 }
             }, 10);
+
+            setInterval(() => {
+                let a = Array.from(document.getElementsByClassName("menu-item")); 
+                let completed = !a.some((i) => {
+                    let name = i.getAttribute('id').split('-')[1];
+                    let feed = i.querySelector('.food-label').getAttribute('food-counter').foodCount;
+                    // console.log(feed)
+                    return taskData[name] != feed
+                })
+                if(completed){
+                    debug();
+                }
+            },100)
+
+            
             setupVoice();
             window.addEventListener('continue', () => {
                 playing = true;
@@ -373,6 +406,40 @@
                     selected_item.querySelector('.food-label').dispatchEvent(new Event('feed'));
                 }
             })
+
+            window.addEventListener('decrease', ()=>{
+                if(!playing){
+                    selected_item.querySelector('.food-label').dispatchEvent(new Event('decrease'));
+                }
+            })
+
+
+
+            window.addEventListener('debug', debug);
+
+
+            let params = new URLSearchParams(location.search);
+            let desired = ["buffalo","pigeon", "cow", "panther","turtle", "start", "task", "lower", "upper"];
+            const defaults = str => {
+                switch (str){
+                    case "start":
+                        return Date.now();
+                    case "lower": 
+                        return 47;
+                    case "upper":
+                        return 55;
+                    default:
+                        return 0;
+                }
+            }
+            let data = {};
+            for(let i of desired){
+                let d = params.get(i); 
+                data[i] = d? parseInt(d) : defaults(i);
+                // console.log(d)
+            }
+            console.table(data);
+            taskData = data;
         }
 
         const setupVoice = () => {
@@ -391,12 +458,14 @@
             
             recognition.start();
 
-            const allowedWords = ["select", "continue", "feed"];
+            const allowedWords = ["select", "continue", "confirm"];
 
             let eventDict = {
                 "select": saidSelect,
                 "continue": saidContinue,
-                "feed": saidFeed,
+                "confirm": saidFeed,
+                "debug":new Event('debug'),
+                "decrease": saidDecrease,
             };
 
             recognition.onresult = (event) => {
@@ -419,8 +488,14 @@
                         console.log('heard',text)
                         window.dispatchEvent(eventDict[text]);
                         document.getElementById('instructions').dispatchEvent(eventDict[text]);
+                        
+                        if(text == 'debug'){
+                            
+                            res.push([{transcript:'select'}])
+                            console.log(res)
+                        }
                     }
-                    diagnostic.textContent = `Result received: ${text}.`;
+                    // diagnostic.textContent = `Result received: ${text}.`;
                 } 
             };
 
@@ -457,10 +532,10 @@
             }
             
             // document.getElementById('alpha').textContent = Math.floor(beta);
-            if(beta <= 47){
+            if(beta <= (taskData?taskData.lower:47)){
                 setGreen('going-up')
             }
-            else if(beta >= 55){
+            else if(beta >=(taskData?taskData.upper:55)){
                 setGreen('going-down')
             }else{
                 setGreen('going-nowhere')
@@ -507,9 +582,15 @@
                 element.setAttribute('position', '-0.02 0.07 0')
 
                 element.addEventListener('feed', e =>{
-                this.data.foodCount++;
-                element.setAttribute('text',`value: Feed:${this.data.foodCount};`)
-            })
+                    this.data.foodCount++;
+                    element.setAttribute('text',`value: Feed:${this.data.foodCount};`)
+                })
+
+                element.addEventListener('decrease',  e =>{
+                    this.data.foodCount--;
+                    element.setAttribute('text',`value: Feed:${this.data.foodCount};`)
+                })
+            
         }});
 
 
@@ -527,13 +608,15 @@
                         "select": "selected",
                         "continue": "unselected",
                         "feed": "unselected",
-                        "info": "Say 'select' to select the current Animal"
+                        "info": "Say 'select' to select the current Animal",
+                        "decrease": "unselected"
                     },
                     "selected": {
                         "feed": "selected",
                         "select": "selected",
                         "continue": "unselected",
-                        "info": "Say 'continue' to continue scrolling the buttons \n Or say 'feed' to feed the Animal"
+                        "info": "Say 'continue' to continue scrolling the buttons \n Or say 'confirm' to feed the Animal \n Or say 'decrease' to reduce food",
+                        "decrease": "selected", 
                     },
                 };
 
@@ -545,7 +628,7 @@
                 updateText();
                 let sf = 0.4;
 
-                element.setAttribute('position', '-0.18 0.4 -0.5');
+                element.setAttribute('position', '-0.18 0.35 -0.5');
 
                 element.setAttribute('scale', `${sf} ${sf} ${sf}`); 
 
@@ -564,14 +647,30 @@
                 //     this.data.foodCount++;
                 //     element.setAttribute('text',`value: Feed:${this.data.foodCount};`)
                 // })
+
         }});
 
-
+        const debug = () => {
+            if(!debugged){
+                debugged = true;
+                let debugString = taskData?`
+                betalower: ${taskData.lower}
+                betaupper: ${taskData.upper}
+                tt:${((Date.now() - taskData.start)/1000).toFixed(1)}
+                `:'no taskdata';
+                
+                alert(debugString); 
+                let a = document.createElement('a')
+                a.href = `index.html?debug=${btoa(debugString)}`; 
+                a.click();
+            }
+            
+        }
     </script>
 </head>
 
 <body>
-    <p id='alpha'></p>
+    <!-- <div><button class="button" onclick="debug()">Display Debug Info</button></div> -->
     <a-scene>
 
 
@@ -602,7 +701,7 @@
         
         <a-mixin id="direction-indicator-plane" geometry="primitive: plane; height: 0.3; width: 0.1" material="color: grey; opacity: 0"></a-mixin>
         <a-mixin id="direction-indicator" geometry="primitive: plane; height: 0.1; width: 0.1" material="color: grey; opacity: 0.9"></a-mixin>
-        <a-mixin id="instructions-mixin" geometry="primitive: plane; height: 0.1; width:1" material="opacity: 1.0;"
+        <a-mixin id="instructions-mixin" geometry="primitive: plane; height: 0.1; width:1" material="opacity: 1;"
         text="align: left; anchor: left; baseline: center; color: black; wrap-count: 40;"></a-mixin>
     
         <a-mixin id="item-icon" scale="0.1 0.1 0.1"
@@ -610,7 +709,7 @@
                 animation__hover="property: rotation; to: 0 360 0; dur: 4000; easing: linear; loop: true; startEvents: rotation-begin; pauseEvents: rotation-pause; resumeEvents: rotation-resume;"
                 ></a-mixin>
 
-
+        <a-sky color="#FFFFFF"></a-sky>
         <a-entity id="camera-ent" camera position="0 1.6 0">
             <a-entity id='cursor' cursor="fuse: false;"
             raycaster="objects: .selectable"
@@ -618,7 +717,7 @@
             <!-- geometry="primitive: ring; radiusInner: 0.002; radiusOuter: 0.004"
             material="color: black; shader: flat; opacity: 0.8;" -->
             </a-entity>
-            <a-entity id="hud" geometry="primitive: plane; height: 2.0; width: 1" position="0 0.3 -1"
+            <a-entity id="hud" geometry="primitive: plane; height: 2.0; width: 1" position="0 0.2 -1"
                 material="color: gray; opacity: 0">
                 <a-entity id="item-template" class="menu-item" mixin="menu-item" position="0.05 0 0" material="src: #my-canvas; opacity: 0.9"
                     animation__forwards="property: position; from: 0.05 0 0; to: 0.05 0.25 0; loop: false; startEvents: forwards-begin;"
@@ -635,10 +734,12 @@
                 <a-entity id="going-nowhere" class="direction-indicator" mixin="direction-indicator" position="0 0 0"></a-entity>
                 <a-entity id="going-down" class="direction-indicator" mixin="direction-indicator" position="0 -0.1 0"></a-entity>
             </a-entity>
-            <a-entity instructions id="instructions" mixin="instructions-mixin" scale="0.45 0.45 0.45"></a-entity>
+            <a-entity instructions id="instructions" mixin="instructions-mixin" scale="0.45 0.45 0.45">
+            </a-entity>
         </a-entity>
         <!-- <p instructions id="instructions"></p> -->
         <!-- <p id="diagnostic">Info</p> -->
+      
     </a-scene>
 </body>
 </html>

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <script>
+            window.onload = (e) => {
+                let tasks = {1: {
+                    cow: 2,
+                    turtle: 1,
+                    buffalo: 1,
+                },
+                2:{
+                    pigeon: 3,
+                    panther: 1,
+                },
+                3:{
+                    buffalo: 1,
+                    pigeon: 1,
+                    cow: 1,
+                    panther: 1
+                },
+            };
+
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+            const randomBetween = (min, max) => {
+                //from this post https://stackoverflow.com/questions/4959975/generate-random-number-between-two-numbers-in-javascript
+                return Math.floor(Math.random() * (max - min + 1) + min)
+            }   
+
+            if (SpeechRecognition !== undefined){
+                Object.keys(tasks).forEach(t => {
+                let b = document.createElement('button');
+                b.classList.add('task-button');
+                b.setAttribute('value', t);
+                b.innerText = `Task ${t}`;
+
+                b.addEventListener('click', e=>{
+                    let a = document.createElement('a');
+
+                    let center = randomBetween(40,60);
+                    let diff = randomBetween(5,10);
+
+                    let params = new URLSearchParams(Object.assign({},tasks[t],{
+                        upper:(center+diff),
+                        lower:(center-diff),
+                        start: Date.now()
+                    })).toString();
+
+
+                    a.href = `interface.html?${params}`
+                    a.click();
+
+                    // let ifr = document.createElement('iframe');
+                    // ifr.src = `interface.html?task=${e.target.value}&start=${Date.now()}&cow=5`;
+                    // document.getElementById('frame').appendChild(ifr);
+                })
+
+                document.querySelector('#buttons').appendChild(b);
+            })
+            }
+            else {
+                alert('Speech recognition not supported on browser please use chrome')
+            }}
+
+           
+            
+        </script>
+    </head>
+    <body>
+        <div id="buttons"></div>
+        <div id="debug"></div>
+        <script>
+            let params = new URLSearchParams(location.search);
+            if(params.has('debug')){
+                let d = document.getElementById("debug");
+                console.log(d)
+                document.getElementById("debug").innerHTML = atob(params.get('debug'))
+            }
+        </script>
+    </body>
+</html>
