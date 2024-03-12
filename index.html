@@ -372,7 +372,7 @@
 
             window.addEventListener('feed', ()=>{
                 if(!playing){
-                    selected_item.querySelector('.food-label').dispatchEvent(saidFeed);
+                    selected_item.querySelector('.food-label').dispatchEvent(new Event('feed'));
                 }
             })
         }
@@ -420,6 +420,7 @@
                     if(Object.keys(eventDict).includes(text)){
                         console.log('heard',text)
                         window.dispatchEvent(eventDict[text]);
+                        document.getElementById('instructions').dispatchEvent(eventDict[text]);
                     }
                     diagnostic.textContent = `Result received: ${text}.`;
                 } 
