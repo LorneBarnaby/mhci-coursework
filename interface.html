@@ -490,7 +490,8 @@
                 console.log(goodResults);
 
                 const text = goodResults[goodResults.length - 1];
-        
+                
+                // document.title = text;
                 if(text.length > 0){
                     if(Object.keys(eventDict).includes(text)){
                         console.log('heard',text)
@@ -499,11 +500,25 @@
                         
                         if(text == 'debug'){
                             
-                            res.push([{transcript:'select'}])
-                            console.log(res)
+                            debug();
+                        }
+                        // document.title = text;
+                    }
+                    else{
+                        let alter = Object.keys(eventDict).map(i => text.toLowerCase().includes(i)?i:null).filter((i) => i != null);
+                        console.log("alter", alter);
+                        if(alter.length){
+                            let word = alter.pop()
+                            window.dispatchEvent(eventDict[word]);
+                            document.getElementById('instructions').dispatchEvent(eventDict[word]);
+                            // document.title = word;
                         }
                     }
+                    
+                    
                     // diagnostic.textContent = `Result received: ${text}.`;
+                    // document.getElementById('instructions').setAttribute('text', `value: ${states[this.data.state]['info']};`)
+                    
                 } 
             };
 
@@ -679,6 +694,7 @@
 
 <body>
     <!-- <div><button class="button" onclick="debug()">Display Debug Info</button></div> -->
+    <!-- <p id="diagnostic" style="text-align: center;">Info</p> -->
     <a-scene>
 
 
@@ -746,7 +762,7 @@
             </a-entity>
         </a-entity>
         <!-- <p instructions id="instructions"></p> -->
-        <!-- <p id="diagnostic">Info</p> -->
+        
       
     </a-scene>
 </body>
