@@ -312,6 +312,7 @@
             this.selectedCanvas = document.getElementById("selected-canvas");
             this.selectectCtx = selectedCanvas.getContext('2d');
             this.selectectCtx.fillStyle = "rgba(0, 10, 255, 0.3)";
+            // this.selectectCtx.fillStyle =  "rgba(245, 252, 193, 0.5)";
             this.selectectCtx.fillRect(0, 0, this.canvas.width, this.canvas.height);
             this.selectectCtx.strokeStyle = "rgba(0, 255, 0, 1.0)"
             this.selectectCtx.lineWidth = 4;
@@ -503,13 +504,67 @@
                 var data = this.data;
                 var element = this.el;
 
-                element.setAttribute('text',`value: Food:${this.data.foodCount};`)
-                element.setAttribute('position', '0.3 0.07 0')
+                element.setAttribute('text',`value: Feed:${this.data.foodCount};`)
+                element.setAttribute('position', '-0.02 0.07 0')
 
                 element.addEventListener('feed', e =>{
                 this.data.foodCount++;
-                element.setAttribute('text',`value: Food:${this.data.foodCount};`)
+                element.setAttribute('text',`value: Feed:${this.data.foodCount};`)
             })
+        }});
+
+
+        AFRAME.registerComponent("instructions", {
+            schema: {
+                state: {default: "unselected"}
+            },
+
+            init: function () {
+                var data = this.data;
+                var element = this.el;
+
+                const states = {
+                    "unselected": {
+                        "select": "selected",
+                        "continue": "unselected",
+                        "feed": "unselected",
+                        "info": "Say 'select' to select the current Animal"
+                    },
+                    "selected": {
+                        "feed": "selected",
+                        "select": "selected",
+                        "continue": "unselected",
+                        "info": "Say 'continue' to continue scrolling the buttons \n Or say 'feed' to feed the Animal"
+                    },
+                };
+
+                const updateText = () => {
+                    element.setAttribute('text', `value: ${states[this.data.state]['info']};`)
+                    console.log(element.getAttribute('text'));
+                }
+
+                updateText();
+                let sf = 0.4;
+
+                element.setAttribute('position', '-0.18 0.4 -0.5');
+
+                element.setAttribute('scale', `${sf} ${sf} ${sf}`); 
+
+                ["feed", "select", "continue"].forEach(phrase => {
+                    element.addEventListener(phrase, e =>{
+                        console.log(this.data.state)
+                        this.data.state = states[this.data.state][e.type];
+                        updateText()
+                    })
+                })
+
+                // element.setAttribute('text',`value: Feed:${this.data.foodCount};`)
+                // element.setAttribute('position', '-0.02 0.07 0')
+
+                // element.addEventListener('feed', e =>{
+                //     this.data.foodCount++;
+                //     element.setAttribute('text',`value: Feed:${this.data.foodCount};`)
+                // })
         }});
 
 
@@ -543,12 +598,13 @@
          position="0 0 0"></a-mixin>
 
         
-        <a-mixin id="menu-item" geometry="primitive: plane; height: 0.2; width: 0.9" position="0 0.5 0"
+        <a-mixin id="menu-item" geometry="primitive: plane; height: 0.2; width: 0.7" position="0 0.5 0"
         ></a-mixin>
         
         <a-mixin id="direction-indicator-plane" geometry="primitive: plane; height: 0.3; width: 0.1" material="color: grey; opacity: 0"></a-mixin>
         <a-mixin id="direction-indicator" geometry="primitive: plane; height: 0.1; width: 0.1" material="color: grey; opacity: 0.9"></a-mixin>
-
+        <a-mixin id="instructions-mixin" geometry="primitive: plane; height: 0.1; width:1" material="opacity: 1.0;"
+        text="align: left; anchor: left; baseline: center; color: black; wrap-count: 40;"></a-mixin>
     
         <a-mixin id="item-icon" scale="0.1 0.1 0.1"
             class="icon"
@@ -559,11 +615,11 @@
         <a-entity id="camera-ent" camera position="0 1.6 0">
             <a-entity id='cursor' cursor="fuse: false;"
             raycaster="objects: .selectable"
-            position="0 0.2 -1">
+            position="0 0 -1">
             <!-- geometry="primitive: ring; radiusInner: 0.002; radiusOuter: 0.004"
             material="color: black; shader: flat; opacity: 0.8;" -->
             </a-entity>
-            <a-entity id="hud" geometry="primitive: plane; height: 2.0; width: 1" position="0 0.4 -1"
+            <a-entity id="hud" geometry="primitive: plane; height: 2.0; width: 1" position="0 0.3 -1"
                 material="color: gray; opacity: 0">
                 <a-entity id="item-template" class="menu-item" mixin="menu-item" position="0.05 0 0" material="src: #my-canvas; opacity: 0.9"
                     animation__forwards="property: position; from: 0.05 0 0; to: 0.05 0.25 0; loop: false; startEvents: forwards-begin;"
@@ -575,14 +631,15 @@
                 </a-entity>
             
             </a-entity>
-            <a-entity id='dir-container' mixin='direction-indicator-plane' position="-0.45 0.15 -1">
+            <a-entity id='dir-container' mixin='direction-indicator-plane' position="-0.35 0.05 -1">
                 <a-entity id="going-up"  class="direction-indicator" mixin="direction-indicator" position="0 0.1 0"></a-entity>
                 <a-entity id="going-nowhere" class="direction-indicator" mixin="direction-indicator" position="0 0 0"></a-entity>
                 <a-entity id="going-down" class="direction-indicator" mixin="direction-indicator" position="0 -0.1 0"></a-entity>
             </a-entity>
+            <a-entity instructions id="instructions" mixin="instructions-mixin" scale="0.45 0.45 0.45"></a-entity>
         </a-entity>
-
-        <p id="diagnostic">Info</p>
+        <!-- <p instructions id="instructions"></p> -->
+        <!-- <p id="diagnostic">Info</p> -->
     </a-scene>
 </body>
 
